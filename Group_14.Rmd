@@ -10,10 +10,14 @@ library(moderndive)
 library(skimr)
 library(kableExtra)
 library(gridExtra)
+library(gapminder)
+library(sjPlot)
+library(stats)
+library(jtools)
 ```
 
 ```{r data, echo = FALSE, eval = TRUE, warning = FALSE, message = FALSE}
-data<- read.csv("E:/dataset14.csv")
+data<- read.csv("/Users/hyf/Desktop/dataset14.csv")
 ```
 
 ```{r}
@@ -42,3 +46,12 @@ data_f2$height[is.na(data_f2$height)] =mean(data_f2$height,na.rm = TRUE)
 data_f2$width[is.na(data_f2$width)] = mean(data_f2$width,na.rm = TRUE)
 ```
 
+#examine if there is any difference in sellable_online by price of the furniture purchase.
+```{r}
+data_f2.price1 <- data_f2 %>%
+                  select(price,sellable_online)
+ggplot(data = data_f2.price1, aes(x = sellable_online, y = price, fill = sellable_online)) +
+  geom_boxplot() +
+  labs(x = "sellable_online", y = "price")+ 
+  theme(legend.position = "none")
+```
