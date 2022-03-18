@@ -10,14 +10,10 @@ library(moderndive)
 library(skimr)
 library(kableExtra)
 library(gridExtra)
-library(gapminder)
-library(sjPlot)
-library(stats)
-library(jtools)
 ```
 
 ```{r data, echo = FALSE, eval = TRUE, warning = FALSE, message = FALSE}
-data<- read.csv("/Users/hyf/Desktop/dataset14.csv")
+data<- read.csv("E:/dataset14.csv")
 ```
 
 ```{r}
