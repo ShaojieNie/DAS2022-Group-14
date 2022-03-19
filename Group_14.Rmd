@@ -10,6 +10,12 @@ library(moderndive)
 library(skimr)
 library(kableExtra)
 library(gridExtra)
+library(gapminder)
+library(sjPlot)
+library(stats)
+library(jtools)
+library(janitor)
+library(ggplot2)
 ```
 
 ```{r data, echo = FALSE, eval = TRUE, warning = FALSE, message = FALSE}
@@ -42,12 +48,31 @@ data_f2$height[is.na(data_f2$height)] =mean(data_f2$height,na.rm = TRUE)
 data_f2$width[is.na(data_f2$width)] = mean(data_f2$width,na.rm = TRUE)
 ```
 
+the price which is more than 1000 is TRUE, and else is FALSE
+```{r}
+data_f2$price[which(data_f2$price>1000)] <- "TRUE"
+data_f2$price[which(data_f2$price<=1000)] <- "FALSE"
+```
+
 #examine if there is any difference in sellable_online by price of the furniture purchase.
 ```{r}
-data_f2.price1 <- data_f2 %>%
-                  select(price,sellable_online)
-ggplot(data = data_f2.price1, aes(x = sellable_online, y = price, fill = sellable_online)) +
-  geom_boxplot() +
-  labs(x = "sellable_online", y = "price")+ 
-  theme(legend.position = "none")
+data_f2 %>% 
+  tabyl(price,sellable_online) %>% 
+  adorn_percentages() %>% 
+  adorn_pct_formatting() %>% 
+  adorn_ns()
+ggplot(data_f2, aes(x= price,  y = ..prop.., group=sellable_online, fill=sellable_online)) + 
+    geom_bar(position="dodge", stat="count") +
+    labs(y = "Proportion")
+```
+#examine if there is any difference in other_colors by price of the furniture purchase.
+```{r}
+data_f2 %>% 
+  tabyl(price,other_colors) %>% 
+  adorn_percentages() %>% 
+  adorn_pct_formatting() %>% 
+  adorn_ns()
+ggplot(data_f2, aes(x= price,  y = ..prop.., group=other_colors, fill=other_colors)) + 
+    geom_bar(position="dodge", stat="count") +
+    labs(y = "Proportion")
 ```
