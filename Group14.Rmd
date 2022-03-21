@@ -22,7 +22,7 @@ library(sjPlot)
 ```
 
 ```{r data, echo = FALSE, eval = TRUE, warning = FALSE, message = FALSE}
-furniture1 <- read.csv("~/AllDatasets/dataset14.csv")
+furniture1 <- read.csv("E:/dataset14.csv")
 # Import data set 
 ```
 
@@ -109,6 +109,84 @@ summary(model5)
 
 ```
 It is same as the former analysis that only the volume variable is most significant in three models. The logit model is better than others which AIC is the lowest and AIC is 383.19.
+
+Therefor, select price and volume .
+```{r}
+expensive.volume <- furniture %>% 
+  select(expensive,volume)
+```
+boxplot of volume by price to get an initial impression of the data:
+```{r}
+ggplot(data = expensive.volume, aes(x = expensive, y = volume, fill = expensive)) +
+  geom_boxplot() +
+  labs(x = "expensive", y = "volume")+ 
+  theme(legend.position = "none")
+```
+final model:
+```{r}
+model <- glm(expensive ~ volume, data = expensive.volume, 
+             family = binomial(link = "logit"))
+model %>%
+  summary()
+print("************************************")
+summ(model)
+print("************************************")
+mod1coefs <- round(coef(model), 2)
+confint(model) %>%
+  kable()
+print("************************************")
+mod.coef.logodds <- model %>%
+                      summary() %>%
+                      coef()
+print("************************************")
+#confidence interval (lower)
+volume.logodds.lower <- mod.coef.logodds["volume", "Estimate"] - 
+                      1.96 * mod.coef.logodds["volume", "Std. Error"]
+volume.logodds.lower
+#confidence interval (lower)
+volume.logodds.upper <- mod.coef.logodds["volume", "Estimate"] + 
+                      1.96 * mod.coef.logodds["volume", "Std. Error"]
+volume.logodds.upper
+#95% confidence interval of(2.43,3.81)
+plot_model(model, show.values = TRUE, transform = NULL,
+           title = "Log-Odds (above 1000)", show.p = FALSE)
+#Hence the point estimate for the log-odds is 3.12, which has a corresponding 95% confidence interval of (2.43, 3.81). 
+```
+
+```{r}
+#add the estimates of the log-odds to our data set:
+expensive.volume <- expensive.volume %>%
+                  mutate(logodds.T = predict(model))
+#simply exponentiate the log-odds:
+model %>%
+ coef() %>%
+  exp()
+#95% confidence interval for the odds by simply exponentiating the lower and upper bounds of our log-odds interval:
+volume.odds.lower <- exp(volume.logodds.lower)
+volume.odds.lower
+volume.odds.upper <- exp(volume.logodds.upper)
+volume.odds.upper
+plot_model(model, show.values = TRUE,
+           title = "Odds (above 1000)", show.p = FALSE)
+```
+```{r}
+#add the estimates of the odds to our data set:
+expensive.volume <- expensive.volume %>%
+                  mutate(odds.T = exp(logodds.T))
+#add the probabilities to our data:
+expensive.volume <- expensive.volume %>%
+                  mutate(probs.T = fitted(model))
+#plot the probability of being TRUE:
+ggplot(data = expensive.volume, aes(x = volume, y = probs.T)) +
+  geom_smooth(method="glm", 
+              method.args = list(family="binomial"), 
+              se = FALSE) +
+  labs(x = "volume", y = "Probability of being T")
+plot_model(model, type = "pred", title = "",
+            axis.title = c("volume", "Prob. of T"))
+```
+
+
 
 ```{r}
 odd1 <- plot_model(model2, show.values = TRUE,
