@@ -22,11 +22,13 @@ library(sjPlot)
 ```
 
 ```{r data, echo = FALSE, eval = TRUE, warning = FALSE, message = FALSE}
-furniture <- read.csv("~/AllDatasets/dataset14.csv")
+furniture1 <- read.csv("~/AllDatasets/dataset14.csv")
 # Import data set 
 ```
 
 ```{r}
+furniture <- furniture1 %>%  
+  filter(!(is.na((depth)&is.na((height)&is.na(width)))))
 furniture$depth[is.na(furniture$depth)] = mean(furniture$depth,na.rm = TRUE)
 furniture$height[is.na(furniture$height)] =mean(furniture$height,na.rm = TRUE)
 furniture$width[is.na(furniture$width)] = mean(furniture$width,na.rm = TRUE)
