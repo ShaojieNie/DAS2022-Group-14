@@ -1,0 +1,112 @@
+---
+title: "Untitled"
+author: "nsj"
+date: "25 February 2022"
+output: pdf_document
+---
+
+```{r message=FALSE,warning=FALSE}
+library(ggplot2)
+library(dplyr)
+library(moderndive)
+library(ISLR)
+library(skimr)
+library(plotly)
+library(tidyr)
+library(jtools)
+library(lubridate)
+library(car)
+library(GGally)
+library(gridExtra)
+library(sjPlot)
+```
+
+```{r data, echo = FALSE, eval = TRUE, warning = FALSE, message = FALSE}
+furniture <- read.csv("~/AllDatasets/dataset14.csv")
+# Import data set 
+```
+
+```{r}
+furniture <- furniture %>%
+  drop_na() %>%
+  mutate(volume = depth/100 * height/100 * width/100,
+         expensive = ifelse(price > 1000,TRUE,FALSE))
+# Filter data 
+
+hist1 <- ggplot(furniture,aes(x = price)) +
+  geom_histogram(bins = 30) 
+  
+
+hist2 <- ggplot(furniture,aes(x = volume)) +
+  geom_histogram(bins = 30) 
+  
+
+bar1 <- ggplot(furniture,aes(x = sellable_online)) +
+  geom_bar() 
+  
+bar2 <- ggplot(furniture,aes(x = other_colors)) +
+  geom_bar() 
+
+bar3 <- ggplot(furniture, aes(x = expensive,  y = ..prop.., group=sellable_online, fill=sellable_online)) + 
+  geom_bar(position="dodge", stat="count") +
+  labs(y = "Proportion")
+
+bar4 <- ggplot(furniture, aes(x = expensive,  y = ..prop.., group=other_colors, fill=other_colors)) + 
+  geom_bar(position="dodge", stat="count") +
+  labs(y = "Proportion")
+  
+hist1log <- ggplot(furniture,aes(x = log(price))) +
+  geom_histogram(bins = 30) 
+  
+
+hist2log <- ggplot(furniture,aes(x = log(volume))) +
+  geom_histogram(bins = 30) 
+  
+grid.arrange(hist1, hist2, bar1, bar2,bar3, bar4, hist1log, hist2log, ncol=2)
+```
+
+```{r}
+model1 <- glm(expensive ~ sellable_online, data = furniture,
+             family = binomial(link = "logit"))
+summary(model1)
+
+model2 <- glm(expensive ~ other_colors, data = furniture,
+             family = binomial(link = "logit"))
+summary(model2)
+
+
+model3 <- glm(expensive ~ other_colors * volume, data = furniture,
+             family = binomial(link = "logit"))
+summary(model3)
+
+```
+
+```{r}
+odd1 <- plot_model(model2, show.values = TRUE,
+title = "", show.p = TRUE)
+
+odd2 <- plot_model(model3, show.values = TRUE,
+title = "", show.p = TRUE)
+
+grid.arrange(odd1, odd2, nrow = 2)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
