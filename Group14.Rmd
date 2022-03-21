@@ -83,21 +83,32 @@ hist2log <- ggplot(furniture,aes(x = log(volume))) +
 grid.arrange(hist1, hist2, bar1, bar2,bar3, bar4, hist1log, hist2log, ncol=2)
 ```
 
+# Formal Data Analysis
+
+##Choosing suitable models
+
+1. choose whether the model is binomial or poisson
 ```{r}
-model1 <- glm(expensive ~ sellable_online, data = furniture,
-             family = binomial(link = "logit"))
+furniture2 <- furniture %>%
+  select(X,item_id,sellable_online,other_colors,volume,expensive)
+model1 <- glm(formula = expensive ~ ., family = binomial, data = furniture2)
 summary(model1)
-
-model2 <- glm(expensive ~ other_colors, data = furniture,
-             family = binomial(link = "logit"))
+model2 <- glm(formula = expensive ~ ., family = poisson, data = furniture2)
 summary(model2)
+```
+Only the volume variable is most significant in both models, and according to the AIC minimum criterion, we choose the Binomial model, AIC=383.19.
 
-
-model3 <- glm(expensive ~ other_colors * volume, data = furniture,
-             family = binomial(link = "logit"))
+2.Choose which model is better: probit, cloglog or logit in Binomial
+```{r}
+model3 <- glm(formula = expensive ~ ., family = binomial(link = 'cloglog'), data = furniture2)
 summary(model3)
+model4 <- glm(formula = expensive ~ ., family = binomial(link = 'logit'), data = furniture2)
+summary(model4)
+model5 <- glm(formula = expensive ~ ., family = binomial(link = 'probit'), data = furniture2)
+summary(model5)
 
 ```
+It is same as the former analysis that only the volume variable is most significant in three models. The logit model is better than others which AIC is the lowest and AIC is 383.19.
 
 ```{r}
 odd1 <- plot_model(model2, show.values = TRUE,
