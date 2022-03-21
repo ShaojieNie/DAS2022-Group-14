@@ -27,8 +27,11 @@ furniture <- read.csv("~/AllDatasets/dataset14.csv")
 ```
 
 ```{r}
+furniture$depth[is.na(furniture$depth)] = mean(furniture$depth,na.rm = TRUE)
+furniture$height[is.na(furniture$height)] =mean(furniture$height,na.rm = TRUE)
+furniture$width[is.na(furniture$width)] = mean(furniture$width,na.rm = TRUE)
 furniture <- furniture %>%
-  drop_na() %>%
+  #drop_na() %>%
   mutate(volume = depth/100 * height/100 * width/100,
          expensive = ifelse(price > 1000,TRUE,FALSE))
 # Filter data 
