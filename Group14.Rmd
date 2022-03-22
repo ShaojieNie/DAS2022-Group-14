@@ -2,10 +2,12 @@
 title: "Untitled"
 author: "nsj"
 date: "25 February 2022"
-output: pdf_document
+output:
+  html_document:
+    df_print: paged
 ---
 
-```{r message=TRUE, warning=FALSE}
+```{r message=FALSE, warning=FALSE}
 library(ggplot2)
 library(dplyr)
 library(moderndive)
@@ -123,22 +125,27 @@ ggplot(data = expensive.volume, aes(x = expensive, y = volume, fill = expensive)
   labs(x = "expensive", y = "volume")+ 
   theme(legend.position = "none")
 ```
+We see in the boxplot that there is a little difference in the volume of price which is above 1000 or below 1000.
+
 final model:
-```{r}
+log-odds
+```{r message=FALSE, warning=FALSE}
 model <- glm(expensive ~ volume, data = expensive.volume, 
              family = binomial(link = "logit"))
 model %>%
   summary()
-print("************************************")
+
 summ(model)
-print("************************************")
+
 mod1coefs <- round(coef(model), 2)
+mod1coefs
+
 confint(model) 
-print("************************************")
+
 mod.coef.logodds <- model %>%
                       summary() %>%
                       coef()
-print("************************************")
+
 #confidence interval (lower)
 volume.logodds.lower <- mod.coef.logodds["volume", "Estimate"] - 
                       1.96 * mod.coef.logodds["volume", "Std. Error"]
@@ -150,10 +157,17 @@ volume.logodds.upper
 #95% confidence interval of(2.43,3.81)
 plot_model(model, show.values = TRUE, transform = NULL,
            title = "Log-Odds (above 1000)", show.p = FALSE)
-#Hence the point estimate for the log-odds is 3.12, which has a corresponding 95% confidence interval of (2.43, 3.81). 
 ```
+Hence the point estimate for the log-odds is 3.12, which has a corresponding 95% confidence interval of (2.43, 3.81). 
+$$
+\begin{aligned}
+\ln\left(\frac{p}{1-p}\right)&= \alpha + \beta\cdot\textrm{volume}=-2.43 +3.12\cdot volume
+\end{aligned}
+$$
+where $p = Prob(True)$ and $1−p=Prob(Flase)$. 
 
-```{r}
+add the estimates of the log-odds to our data set:
+```{r message=FALSE, warning=FALSE}
 #add the estimates of the log-odds to our data set:
 expensive.volume <- expensive.volume %>%
                   mutate(logodds.T = predict(model))
@@ -169,7 +183,10 @@ volume.odds.upper
 plot_model(model, show.values = TRUE,axis.lim = c(10,50),
            title = "Odds (above 1000)", show.p = FALSE)
 ```
-```{r}
+Hence the point estimate for the odds is 22.65, which has a corresponding 95% confidence interval of (11.41, 44.96).
+On the odds scale, the value of the intercept (0.088) gives the odds of price above 1000 given their volume = 0, which is very close to zaro. For volume we have an odds of 22.65, which indicates that for every 1 unit increase in volume, the odds of the price above 1000 increase  22.65 
+
+```{r message=FALSE, warning=FALSE}
 #add the estimates of the odds to our data set:
 expensive.volume <- expensive.volume %>%
                   mutate(odds.T = exp(logodds.T))
@@ -185,6 +202,12 @@ ggplot(data = expensive.volume, aes(x = volume, y = probs.T)) +
 plot_model(model, type = "pred", title = "",
             axis.title = c("volume", "Prob. of T"))
 ```
+probability $p=Prob(TRUE)$:
+$$
+\begin{aligned}
+p = \frac{\exp(\alpha + \beta \cdot volume)}{1+\exp(\alpha + \beta \cdot volume)}=\frac{\exp(-2.43 + 3.12 \cdot volume)}{1+\exp(-2.43 + 3.12 \cdot volume)}
+\end{aligned}
+$$
 
 
 
@@ -199,41 +222,41 @@ grid.arrange(odd1, odd2, nrow = 2)
 ```
 formula
 $$
-\begin{align}
+\begin{aligned}
 \ln\left(\frac{p}{1-p}\right)&= \alpha + \beta\cdot\textrm{volume}=xxx+xxx\cdot volume
-\end{align}
+\end{aligned}
 $$
 where $p = Prob(True)$ and $1−p=Prob(Flase)$. 
 
 odds
 $$
-\begin{align}
+\begin{aligned}
 \frac{p}{1-p} = \exp(\alpha + \beta \cdot volume)
-\end{align}
+\end{aligned}
 $$
 probabilities:
 $$
-\begin{align}
+\begin{aligned}
 p = \frac{\exp(\alpha + \beta \cdot volume)}{1+\exp(\alpha + \beta \cdot volume)}
-\end{align}
+\end{aligned}
 $$
 logit link function:apm2-3
 $$
-\begin{align}
+\begin{aligned}
 g(p_i) = \log(\frac {p_i}{1-p_i})
-\end{align}
+\end{aligned}
 $$
 probit link:apm2-5
 $$
-\begin{align}
-g(p_i) = \phi ^{-1}(p_i) = \beta_0 + \beta_1x_i
-\end{align}
+\begin{aligned}
+g(p_i) = \phi^{-1}(p_i) = \beta_0 + \beta_1x_i
+\end{aligned}
 $$
 complementary log-log link:apm2-6
 $$
-\begin{align}
+\begin{aligned}
 g(p_i) = \log[-\log(1-p_i)] = \beta_0 + \beta_1x_i
-\end{align}
+\end{aligned}
 $$
 
 
