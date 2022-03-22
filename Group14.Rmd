@@ -5,7 +5,7 @@ date: "25 February 2022"
 output: pdf_document
 ---
 
-```{r message=FALSE,warning=FALSE}
+```{r message=TRUE, warning=FALSE}
 library(ggplot2)
 library(dplyr)
 library(moderndive)
@@ -25,7 +25,8 @@ library(sjPlot)
 furniture1 <- read.csv("E:/dataset14.csv")
 # Import data set 
 ```
-
+Our goal is to build a model to predict the price(>1000) based on information about the sellable_online, other_colors,depth,height,width.
+The response variable is the price for $n=500$ furniture, taking logical value TRUE for >=1000 and FALSE for <1000.Predictors include the sellable_online, colors,depth,height,width. And the volume is equal to $depth \cdot height \cdot width$.Therefor we use the variable of volume instead of others.
 ```{r}
 furniture <- furniture1 %>%  
   filter(!(is.na((depth)&is.na((height)&is.na(width)))))
@@ -38,7 +39,6 @@ furniture <- furniture %>%
          expensive = ifelse(price > 1000,TRUE,FALSE))
 # Filter data 
 ```
-
 
 #Exploratory Data Analysis
 We grouped prices to form a new column of variables, with TRUE for prices above 1000 and FALSE for prices up to 1000. the table below shows summary statistics for the length, width, height and volume of furniture for each price category. The 1,2 are depth, 3,4 are height, 5,6 are width and 7,8 are volume. In the following tables grouped as FALSE are 1, 3, 5 and 7 and grouped as TRUE are 2, 4, 6 and 8.
@@ -82,7 +82,7 @@ hist2log <- ggplot(furniture,aes(x = log(volume))) +
   
 grid.arrange(hist1, hist2, bar1, bar2,bar3, bar4, hist1log, hist2log, ncol=2)
 ```
-
+bar2:According to the bar chart, there is not clear pattern here with the price much higher for colorful furniture than for non-color furniture.
 # Formal Data Analysis
 
 ##Choosing suitable models
