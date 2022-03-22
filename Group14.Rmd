@@ -197,12 +197,44 @@ title = "", show.p = TRUE)
 
 grid.arrange(odd1, odd2, nrow = 2)
 ```
+formula
+$$
+\begin{align}
+\ln\left(\frac{p}{1-p}\right)&= \alpha + \beta\cdot\textrm{volume}=xxx+xxx\cdot volume
+\end{align}
+$$
+where $p = Prob(True)$ and $1−p=Prob(Flase)$. 
 
-
-
-
-
-
+odds
+$$
+\begin{align}
+\frac{p}{1-p} = \exp(\alpha + \beta \cdot volume)
+\end{align}
+$$
+probabilities:
+$$
+\begin{align}
+p = \frac{\exp(\alpha + \beta \cdot volume)}{1+\exp(\alpha + \beta \cdot volume)}
+\end{align}
+$$
+logit link function:apm2-3
+$$
+\begin{align}
+g(p_i) = \log(\frac {p_i}{1-p_i})
+\end{align}
+$$
+probit link:apm2-5
+$$
+\begin{align}
+g(p_i) = \phi ^{-1}(p_i) = \beta_0 + \beta_1x_i
+\end{align}
+$$
+complementary log-log link:apm2-6
+$$
+\begin{align}
+g(p_i) = \log[-\log(1-p_i)] = \beta_0 + \beta_1x_i
+\end{align}
+$$
 
 
 
