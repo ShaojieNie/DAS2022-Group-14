@@ -133,8 +133,7 @@ print("************************************")
 summ(model)
 print("************************************")
 mod1coefs <- round(coef(model), 2)
-confint(model) %>%
-  kable()
+confint(model) 
 print("************************************")
 mod.coef.logodds <- model %>%
                       summary() %>%
