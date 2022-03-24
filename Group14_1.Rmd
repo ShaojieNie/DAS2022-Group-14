@@ -1,0 +1,226 @@
+---
+title: "Untitled"
+author: "nsj"
+date: "25 February 2022"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+```{r message=FALSE, warning=FALSE}
+library(ggplot2)
+library(dplyr)
+library(moderndive)
+library(ISLR)
+library(skimr)
+library(plotly)
+library(tidyr)
+library(jtools)
+library(lubridate)
+library(car)
+library(GGally)
+library(gridExtra)
+library(sjPlot)
+```
+
+```{r data, echo = FALSE, eval = TRUE, warning = FALSE, message = FALSE}
+furniture1 <- read.csv("~/AllDatasets/dataset14.csv")
+# Import data set 
+```
+Our goal is to build a model to predict the price(>1000) based on information about the sellable_online, other_colors,depth,height,width.
+The response variable is the price for $n=500$ furniture, taking logical value TRUE for >=1000 and FALSE for <1000.Predictors include the sellable_online, colors,depth,height,width. And the volume is equal to $depth \cdot height \cdot width$.Therefor we use the variable of volume instead of others. This project initially chose to remove all lines with missing values in terms of missing value processing, but the processed data lost too much information (249 lines of complete data were obtained, compared with 500 at the beginning). As a result, only the lines with missing height, depth, or width are deleted in this project, and the remaining missing values are filled with the mean values of these three variables.
+```{r}
+furniture <- furniture1 %>%  
+  filter(!(is.na((depth)&is.na((height)&is.na(width)))))
+furniture$depth[is.na(furniture$depth)] = mean(furniture$depth,na.rm = TRUE)
+furniture$height[is.na(furniture$height)] =mean(furniture$height,na.rm = TRUE)
+furniture$width[is.na(furniture$width)] = mean(furniture$width,na.rm = TRUE)
+furniture <- furniture %>%
+  #drop_na() %>%
+  mutate(volume = depth/100 * height/100 * width/100,
+         expensive = ifelse(price > 1000,TRUE,FALSE))
+# Filter data 
+```
+
+#Exploratory Data Analysis
+We grouped prices to form a new column of variables, with TRUE for prices above 1000 and FALSE for prices below 1000. the table below shows summary statistics for the length, width, height and volume of furniture for each price category. For items costing more than 1000 lira, the average depth, height, and width are obviously greater.
+```{r}
+furniture %>%
+  select(depth,height,width,volume,expensive) %>%
+  group_by(expensive) %>%
+  filter(expensive == TRUE) %>%
+  skim() %>%
+  transmute(Mean=numeric.mean,SD=numeric.sd, Min=numeric.p0, Q1=numeric.p25, Median=numeric.p50, Q3=numeric.p75, Max=numeric.p100) 
+
+furniture %>%
+  select(depth,height,width,volume,expensive) %>%
+  group_by(expensive) %>%
+  filter(expensive == FALSE) %>%
+  skim() %>%
+  transmute(Mean=numeric.mean,SD=numeric.sd, Min=numeric.p0, Q1=numeric.p25, Median=numeric.p50, Q3=numeric.p75, Max=numeric.p100)
+```
+
+```{r}
+hist1 <- ggplot(furniture,aes(x = volume)) +
+  geom_histogram(bins = 30) 
+  
+bar1 <- ggplot(furniture,aes(x = sellable_online)) +
+  geom_bar() 
+  
+bar2 <- ggplot(furniture,aes(x = other_colors)) +
+  geom_bar() 
+
+bar3 <- ggplot(furniture, aes(x = expensive,  y = ..prop.., group=sellable_online, fill=sellable_online)) + 
+  geom_bar(position="dodge", stat="count") +
+  labs(y = "Proportion")
+
+bar4 <- ggplot(furniture, aes(x = expensive,  y = ..prop.., group=other_colors, fill=other_colors)) + 
+  geom_bar(position="dodge", stat="count") +
+  labs(y = "Proportion")
+
+hist1log <- ggplot(furniture,aes(x = log(volume))) +
+  geom_histogram(bins = 30) 
+  
+grid.arrange(hist1, hist1log,bar1, bar2,bar3, bar4, ncol=2)
+```
+hist1 & hist1log: The volume variable has a highly skewed nature, as seen in the two histograms, so the logarithmic variable should be chosen for modelling.
+
+bars: According to the bar chart, there is not clear pattern here with the price much higher for colorful furniture than for non-color furniture. With all items over 1000 lira available for purchase online, sellable_online appears to be the more influential variable.
+# Formal Data Analysis
+
+##Choosing suitable models
+
+1. choose whether the model is binomial or poisson
+```{r}
+furniture2 <- furniture %>%
+  select(X,item_id,sellable_online,other_colors,volume,expensive)
+model1 <- glm(formula = expensive ~ ., family = binomial, data = furniture2)
+summary(model1)
+model2 <- glm(formula = expensive ~ ., family = poisson, data = furniture2)
+summary(model2)
+```
+Only the volume variable is most significant in both models, and according to the AIC minimum criterion, we choose the Binomial model, AIC=383.19.
+
+2.Choose which model is better: probit, cloglog or logit in Binomial
+```{r}
+model3 <- glm(formula = expensive ~ ., family = binomial(link = 'cloglog'), data = furniture2)
+summary(model3)
+model4 <- glm(formula = expensive ~ ., family = binomial(link = 'logit'), data = furniture2)
+summary(model4)
+model5 <- glm(formula = expensive ~ ., family = binomial(link = 'probit'), data = furniture2)
+summary(model5)
+
+```
+It is same as the former analysis that only the volume variable is most significant in three models. The logit model is better than others which AIC is the lowest and AIC is 383.19.
+
+Therefor, select price and volume .
+```{r}
+expensive.volume <- furniture %>% 
+  select(expensive,volume)
+expensive.volume$expensive <- as.factor(expensive.volume$expensive)
+```
+boxplot of volume by price to get an initial impression of the data:
+```{r}
+ggplot(data = expensive.volume, aes(x = expensive, y = volume, fill = expensive)) +
+  geom_boxplot() +
+  labs(x = "expensive", y = "volume")+ 
+  theme(legend.position = "none")
+```
+We see in the box plot that there is a little difference in the volume of price which is above 1000 or below 1000. According to the size of the box, furniture prices above 1000 are more dispersed, with a larger difference between maximum and minimum value. The impact of outliers is ignored due to the small number of them.
+
+final model:
+log-odds
+```{r message=FALSE, warning=FALSE}
+model <- glm(expensive ~ volume, data = expensive.volume, 
+             family = binomial(link = "logit"))
+model %>%
+  summary()
+
+summ(model)
+
+mod1coefs <- round(coef(model), 2)
+mod1coefs
+
+confint(model) 
+
+mod.coef.logodds <- model %>%
+                      summary() %>%
+                      coef()
+
+#confidence interval (lower)
+volume.logodds.lower <- mod.coef.logodds["volume", "Estimate"] - 
+                      1.96 * mod.coef.logodds["volume", "Std. Error"]
+volume.logodds.lower
+#confidence interval (lower)
+volume.logodds.upper <- mod.coef.logodds["volume", "Estimate"] + 
+                      1.96 * mod.coef.logodds["volume", "Std. Error"]
+volume.logodds.upper
+#95% confidence interval of(2.43,3.81)
+plot_model(model, show.values = TRUE, transform = NULL,
+           title = "Log-Odds (above 1000)", show.p = FALSE)
+```
+Hence the point estimate for the log-odds is 3.12, which has a corresponding 95% confidence interval of (2.43, 3.81). 
+$$
+\begin{aligned}
+\ln\left(\frac{p}{1-p}\right)&= \alpha + \beta\cdot\textrm{volume}=-2.43 +3.12\cdot volume
+\end{aligned}
+$$
+where $p = Prob(True)$ and $1−p=Prob(Flase)$. 
+
+add the estimates of the log-odds to our data set:
+```{r message=FALSE, warning=FALSE}
+#add the estimates of the log-odds to our data set:
+expensive.volume <- expensive.volume %>%
+                  mutate(logodds.T = predict(model))
+#simply exponentiate the log-odds:
+model %>%
+ coef() %>%
+  exp()
+#95% confidence interval for the odds by simply exponentiating the lower and upper bounds of our log-odds interval:
+volume.odds.lower <- exp(volume.logodds.lower)
+volume.odds.lower
+volume.odds.upper <- exp(volume.logodds.upper)
+volume.odds.upper
+plot_model(model, show.values = TRUE,axis.lim = c(10,50),
+           title = "Odds (above 1000)", show.p = FALSE)
+```
+Hence the point estimate for the odds is 22.65, which has a corresponding 95% confidence interval of (11.41, 44.96).
+On the odds scale, the value of the intercept (0.088) gives the odds of price above 1000 given their volume = 0, which is very close to zaro. For volume we have an odds of 22.65, which indicates that for every 1 unit increase in volume, the odds of the price above 1000 increase  22.65 
+
+```{r message=FALSE, warning=FALSE}
+#add the estimates of the odds to our data set:
+expensive.volume <- expensive.volume %>%
+                  mutate(odds.T = exp(logodds.T))
+#add the probabilities to our data:
+expensive.volume <- expensive.volume %>%
+                  mutate(probs.T = fitted(model))
+#plot the probability of being TRUE:
+ggplot(data = expensive.volume, aes(x = volume, y = probs.T)) +
+  geom_smooth(method="glm", 
+              method.args = list(family="binomial"), 
+              se = FALSE) +
+  labs(x = "volume", y = "Probability of being T")
+plot_model(model, type = "pred", title = "",
+            axis.title = c("volume", "Prob. of T"))
+```
+probability $p=Prob(TRUE)$:
+$$
+\begin{aligned}
+p = \frac{\exp(\alpha + \beta \cdot volume)}{1+\exp(\alpha + \beta \cdot volume)}=\frac{\exp(-2.43 + 3.12 \cdot volume)}{1+\exp(-2.43 + 3.12 \cdot volume)}
+\end{aligned}
+$$
+According to the probability curve, when the volume of a piece of furniture exceeds 3 cubic meters, the average price is over 1000 lira.
+
+
+The conclusion is that while the data set contains many variables that may be relevant, in the end the key factor that can drive the price above 1000 lira is the volume of the furniture. While sellable_online was a key variable in the initial hypothesis, the conclusion was the opposite. We assume this because almost all of the furniture is available online, and the pieces that aren't are less than 1,000 lira each by coincidence. People tend to pay more attention to the overall design of furniture when it comes to colour, and furniture brands will provide special customised services.
+
+
+
+
+
+
+
+
+
+
